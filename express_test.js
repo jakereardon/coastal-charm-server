@@ -2,9 +2,10 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 
 const app = express();
-const port = 9000;
+const port = 8000;
 
 app.use(express.json());
+
 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
@@ -26,10 +27,11 @@ function formatJsonForMail(formJson) {
   return formattedInfo;
 }
 
-app.post("/api", (req, res) => {
+app.post("/", (req, res) => {
   const formDataJson = req.body;
 
   res.sendStatus(201);
+  console.log("recieved");
 
   const mailOptions = {
     from: "noreply@coastalcharmnh.com",
@@ -38,9 +40,9 @@ app.post("/api", (req, res) => {
     html: formatJsonForMail(formDataJson)
   }
 
-  /*transporter.sendMail(mailOptions, (err, info) => {
+  transporter.sendMail(mailOptions, (err, info) => {
     if (err) console.log(err);
-  });*/
+  });
 });
 
 app.listen(port, () => {
