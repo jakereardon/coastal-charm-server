@@ -4,14 +4,14 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 
 const app = express();
-const port = 8080;
+const port = 8000;
 
 const client = new MongoClient(process.env.MONGODB_URI);
 const charmsCollection = client.db("test").collection("charms");
 
 app.use(express.json());
 
-app.get("/api/charms", async (req, res) => {
+app.get("/charms", async (req, res) => {
   res.json(await charmsCollection.find().toArray());
 });
 
@@ -35,7 +35,7 @@ function formatJsonForMail(formJson) {
   return formattedInfo;
 }
 
-app.post("/api/book-form", (req, res) => {
+app.post("/book-form", (req, res) => {
   const formDataJson = req.body;
 
   res.sendStatus(201);
