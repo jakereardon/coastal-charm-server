@@ -1,18 +1,23 @@
 const { MongoClient} = require("mongodb");
+
 require("dotenv").config()
+
 const express = require("express");
 const nodemailer = require("nodemailer");
 
 const app = express();
 const port = 8000;
 
-const client = new MongoClient(process.env.MONGODB_URI);
-const charmsCollection = client.db("test").collection("charms");
+const mongoClient = new MongoClient(process.env.MONGODB_URI);
 
 app.use(express.json());
 
 app.get("/charms", async (req, res) => {
-  res.json(await charmsCollection.find().toArray());
+  console.log("request recieved");
+  res.json(
+    await mongoClient.db("inventory").collection("charms").find().toArray()
+  );
+
 });
 
 const transporter = nodemailer.createTransport({
