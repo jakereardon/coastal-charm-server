@@ -45,11 +45,6 @@ app.post("/create-confirm-intent", async (req, res) => {
   }
 });
 
-app.get("/gallery", async (req, res) => {
-  
-});
-
-
 app.get("/charms", async (req, res) => {
   res.json(
     await mongoClient.db("inventory").collection("charms").find().toArray()
@@ -62,6 +57,26 @@ app.get("/chains", async (req, res) => {
     await mongoClient.db("inventory").collection("chains").find().toArray()
   );
 
+});
+
+function getFilenamesFromXML(xml) {
+  const re = /<Key>gallery\/(.*?)<\/Key>/g;
+  const matches = [...xml.matchAll(re)]
+
+  return matches.filter(m => m[1]).map(m => "https://cc-nh.nyc3.digitaloceanspaces.com/gallery/" + m[1]);
+}
+
+app.get("/gallery/images", async(req, res) => {
+  let imageFilenames;
+
+  fetch("https://cc-nh.nyc3.digitaloceanspaces.com")
+    .then(res => res.text())
+    .then(xml => getFilenamesFromXML(xml))
+    .then(fnames => {
+      res.json({
+        urls: fnames
+      })
+    });  
 });
 
 const transporter = nodemailer.createTransport({
@@ -88,7 +103,6 @@ app.post("/book-form", (req, res) => {
   const formDataJson = req.body;
 
   res.sendStatus(201);
-  console.log("recieved");
 
   const mailOptions = {
     from: "noreply@coastalcharmnh.com",
