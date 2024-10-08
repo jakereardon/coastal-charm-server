@@ -24,7 +24,6 @@ function computeCartCost(cart) {
 
 app.post("/create-confirm-intent", async (req, res) => {
   const totalCost = computeCartCost(req.body.items);
-  console.log(formatCartForStripeDescription(req.body.items))
 
   try {
     const intent = await stripe.paymentIntents.create({
@@ -49,13 +48,6 @@ app.post("/create-confirm-intent", async (req, res) => {
 app.get("/gallery", async (req, res) => {
   
 });
-
-
-app.post("/orders", async (req, res) => {
-  console.log(await req);
-  res.json({test: "hi"});
-});
-
 
 
 app.get("/charms", async (req, res) => {
