@@ -49,6 +49,15 @@ function generateItemImage(item) {
     .catch(err => console.log(err));
 }
 
+function formatJsonShipping(shipping) {
+  return `
+    <div>${shipping.name}</div>
+    <div>${shipping.address.line1}</div>
+    <div>${shipping.address.line2}</div>
+    <div>${shipping.address.state}, ${shipping.address.postal_code}</div>
+  `;
+}
+
 app.post("/create-confirm-intent", async (req, res) => {
   const items = req.body.items;
   const totalCost = computeCartCost(items);
@@ -64,31 +73,47 @@ app.post("/create-confirm-intent", async (req, res) => {
     });
 
     
-    const intentId = intent.id;
-    
-    generateItemImage(items[0])
-      .then(function(img) {
+    Promise.all(items.map(i => generateItemImage(i)))
+      .then(function(images) {
+        const imageAttachments = images.map(function(image, i) {
+          return {
+            filename: "item-" + i + ".png",
+            content: image.createPNGStream(),
+            cid: "item-" + i,
+          }
+        });
+
+        const html = items.map(function(item, i) {
+          return `
+            <div>
+              ${formatJsonShipping(intent.shipping)}
+              <br/>
+              <div>${item.chain.alt}: ${item.chain.price}</div>
+              <div>${item.charms.map(c => c.alt + ": " + c.price)}</div>
+              <img width="512" src="cid:item-${i}"/>
+            </div>
+          `;
+        }).join("\n");
+
+        console.log(html);
+
         const mailOptions = {
           from: "noreply@coastalcharmnh.com",
           to: "jakereardon13@gmail.com",
-          subject: "New Order #" + req.body.id,
-          html: "",
-          attachments: [{
-            filename: "test_image.png",
-            content: img.createPNGStream()
-          }]
+          subject: "New Order #" + intent.id,
+          html: html,
+          attachments: imageAttachments
         }
-      });
 
+        transporter.sendMail(mailOptions, (err, info) => {
+          if (err) console.log(err);
+        });
+      });
+    
     res.json({
       client_secret: intent.client_secret,
       status: intent.status
     });
-  
-    /*transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.log(err);
-    });*/
-
   } catch (err) {
     res.json({
       error: err
