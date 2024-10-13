@@ -13,7 +13,7 @@ const port = 8000;
 
 const mongoClient = new MongoClient(process.env.MONGODB_URI);
 
-app.use(express.json());
+const apiPrefix = process.env.API_PREFIX;
 
 function computeItemCost(item) {
   const charmsCost = item.charms.reduce((totalCost, charm) => totalCost + charm.price, 0);
@@ -67,7 +67,7 @@ function formatJsonShipping(shipping) {
   `;
 }
 
-app.post("/create-confirm-intent", async (req, res) => {
+app.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
   const items = req.body.items;
   const totalCost = computeCartCost(items);
 
@@ -129,14 +129,14 @@ app.post("/create-confirm-intent", async (req, res) => {
   }
 });
 
-app.get("/charms", async (req, res) => {
+app.get(apiPrefix + "/charms", async (req, res) => {
   res.json(
     await mongoClient.db("inventory").collection("charms").find().toArray()
   );
 
 });
 
-app.get("/chains", async (req, res) => {
+app.get(apiPrefix + "/chains", async (req, res) => {
   res.json(
     await mongoClient.db("inventory").collection("chains").find().toArray()
   );
@@ -150,7 +150,7 @@ function getFilenamesFromXML(xml) {
   return matches.filter(m => m[1]).map(m => "https://cc-nh.nyc3.digitaloceanspaces.com/gallery/" + m[1]);
 }
 
-app.get("/gallery/images", async(req, res) => {
+app.get(apiPrefix + "/gallery/images", async(req, res) => {
   let imageFilenames;
 
   fetch("https://cc-nh.nyc3.digitaloceanspaces.com")
@@ -183,7 +183,7 @@ function formatJsonForMail(formJson) {
   return formattedInfo;
 }
 
-app.post("/book-form", (req, res) => {
+app.post(apiPrefix + "/book-form", (req, res) => {
   const formDataJson = req.body;
 
   res.sendStatus(201);
