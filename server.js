@@ -33,7 +33,11 @@ function generateItemImage(item) {
 
   return loadImage("https://cc-nh.nyc3.digitaloceanspaces.com/chains/necklace-one.png")
     .then(function(img) {
-      ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight - 100);
+      const ratio = img.naturalWidth / img.naturalHeight;
+      const height = canvasHeight * 0.8
+      const width = height * 0.8 / ratio;
+      const x = canvasWidth / 2 - width / 2;
+      ctx.drawImage(img, x, 0, width, height);
     })
     .then(function() {
       return Promise.all(item.charms.map(function(charm) {
@@ -41,7 +45,12 @@ function generateItemImage(item) {
       }));
     })
     .then(function(imgPromises) {
-      imgPromises.forEach((img, i) => ctx.drawImage(img, item.charms[i].x, item.charms[i].y, 100, 100));
+      imgPromises.forEach(function(img, i) {
+        const x = (canvasWidth / 2 - 50) + (1440 / 2 - item.charms[i].x) * 1440 / canvasWidth;
+        console.log(x);
+        const y = item.charms[i].y / 744 * canvasHeight;
+        ctx.drawImage(img, x, y, 100, 100);
+      });
     })
     .then(() => {
       return canvas;
@@ -94,8 +103,6 @@ app.post("/create-confirm-intent", async (req, res) => {
             </div>
           `;
         }).join("\n");
-
-        console.log(html);
 
         const mailOptions = {
           from: "noreply@coastalcharmnh.com",
