@@ -3,10 +3,12 @@ const express = require("express");
 const app = express();
 const port = 8000;
 
+// import routes
 const galleryRouter = require("./routes/gallery");
 const bookRouter = require("./routes/book");
 const orderRouter = require("./routes/order");
 
+// json middleware
 app.use(express.json());
 
 app.use(galleryRouter);
