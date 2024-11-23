@@ -24,6 +24,18 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+async function getShippingCost() {
+  const constants = await mongoClient.db("business").collection("constants");
+  const shipping = await constants.findOne({ field: "shippingCostInDollars" });
+  return shipping.value;
+}
+
+router.get(apiPrefix + "/shippingCost", async (req, res) => {
+  res.json({
+    cost: await getShippingCost()
+  });
+});
+
 router.get(apiPrefix + "/charms", async (req, res) => {
   // gets available draggable foreground items
   res.json(
@@ -136,7 +148,7 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
             <div>
               <br/>
               <div>${item.chain.alt}: ${item.chain.price}</div>
-              <div>${item.charms.map(c => c.alt + ": " + c.price)}</div>
+              <div>${item.charms.map(c => c.alt + ": $" + c.price + " ")}</div>
               <img width="512" src="cid:item-${i}"/>
             </div>
           `;
