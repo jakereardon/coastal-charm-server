@@ -104,13 +104,14 @@ function generateItemImage(item, clientWidth, clientHeight) {
     .catch(err => console.log(err));
 }
 
-function formatJsonShipping(shipping) {
+function formatJsonShipping(shipping, email) {
   return `
     <b>Shipping Address</b>
     <div>${shipping.name}</div>
     <div>${shipping.address.line1}</div>
     ${shipping.address.line2 ? '<div>' + shipping.address.line2 + '</div>': ''}
     <div>${shipping.address.state}, ${shipping.address.postal_code}</div>
+    <div>${email}</div>
   `;
 }
 
@@ -143,21 +144,24 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
         });
 
         // add shipping address, formatted for HTML email
-        const html = formatJsonShipping(intent.shipping) + items.map(function(item, i) {
+        const html = formatJsonShipping(intent.shipping, req.body.email)
+          + "<div> Notes: " + req.body.notes + "</div>"
+          + items.map(function(item, i) {
           return `
             <div>
               <br/>
-              <div>${item.chain.alt}: ${item.chain.price}</div>
-              <div>${item.charms.map(c => c.alt + ": $" + c.price + " ")}</div>
+              <div>${item.chain.alt}: $${item.chain.price[item.lengthIndex]}</div>
+              <div>${item.charms.map(c => c.alt + ": $" + c.price).join(", ")}</div>
               <img width="512" src="cid:item-${i}"/>
             </div>
+            #${intent.id}
           `;
         }).join("\n");
 
         const mailOptions = {
           from: "noreply@coastalcharmnh.com",
           to: "jakereardon13@gmail.com",
-          subject: "New Order #" + intent.id,
+          subject: "Thanks for your order!",
           html: html,
           attachments: imageAttachments
         }
@@ -166,6 +170,18 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
         transporter.sendMail(mailOptions, (err, info) => {
           if (err) console.log(err);
         });
+      });
+
+      const customerMailOptions = {
+        from: "noreply@coastalcharmnh.com",
+        to: email,
+        subject: "Thanks for your order!",
+        html: html,
+        attachments: imageAttachments
+      }
+
+      transporter.sendMail(customerMailOptions, (err, info) => {
+        if (err) console.log(err);
       });
     
     res.json({
