@@ -118,17 +118,25 @@ function formatJsonShipping(shipping, email) {
 router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
   const centsPerDollar = 100;
 
-  const items = req.body.items;
+  const { items, notes, email } = req.body;
   const totalCost = computeCartCost(items) + 6;
 
+  // create and confirm Stripe payment intent
   try {
-    // create and confirm Stripe payment intent
     const intent = await stripe.paymentIntents.create({
       confirm: true,
       amount: totalCost * centsPerDollar,
       currency: "usd",
       confirmation_token: req.body.confirmationTokenId,
-      return_url: "http://localhost:3000/gallery"
+      return_url: "https://coastalcharmnh.com"
+    });
+  
+    const ordersCollection = mongoClient.db("orders").collection("orders");
+    ordersCollection.insertOne({
+      shipping: intent.shipping,
+      notes: notes,
+      email: email,
+      items: items.map(item => item.chain.alt)
     });
 
     // send an email to business owners with order information
@@ -153,9 +161,7 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
               <div>${item.chain.alt}: $${item.chain.price[item.lengthIndex]}</div>
               <div>${item.charms.map(c => c.alt + ": $" + c.price).join(", ")}</div>
               <img width="512" src="cid:item-${i}"/>
-            </div>
-            #${intent.id}
-          `;
+            </div>`;
         }).join("\n");
 
         const mailOptions = {
@@ -170,18 +176,18 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
         transporter.sendMail(mailOptions, (err, info) => {
           if (err) console.log(err);
         });
-      });
 
-      const customerMailOptions = {
-        from: "noreply@coastalcharmnh.com",
-        to: email,
-        subject: "Thanks for your order!",
-        html: html,
-        attachments: imageAttachments
-      }
-
-      transporter.sendMail(customerMailOptions, (err, info) => {
-        if (err) console.log(err);
+        const customerMailOptions = {
+          from: "noreply@coastalcharmnh.com",
+          to: email,
+          subject: "Thanks for your order!",
+          html: html,
+          attachments: imageAttachments
+        }
+  
+        transporter.sendMail(customerMailOptions, (err, info) => {
+          if (err) console.log(err);
+        });
       });
     
     res.json({
