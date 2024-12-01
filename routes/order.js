@@ -25,14 +25,29 @@ const transporter = nodemailer.createTransport({
 });
 
 async function getShippingCost() {
-  const constants = await mongoClient.db("business").collection("constants");
+  const constants = mongoClient.db("business").collection("constants");
   const shipping = await constants.findOne({ field: "shippingCostInDollars" });
   return shipping.value;
+}
+
+async function getSaleData() {
+  const constants = mongoClient.db("business").collection("constants");
+  const saleData = await constants.findOne({ field: "sale" });
+  return saleData;
 }
 
 router.get(apiPrefix + "/shippingCost", async (req, res) => {
   res.json({
     cost: await getShippingCost()
+  });
+});
+
+router.get(apiPrefix + "/saleData", async (req, res) => {
+  const saleData = await getSaleData();
+
+  res.json({
+    sale: saleData.sale,
+    percentOff: saleData.percentOff
   });
 });
 
@@ -60,9 +75,14 @@ function computeItemCost(item) {
   return chainPrice + charmsCost;
 }
 
-function computeCartCost(cart) {
+async function computeCartCost(cart) {
+  const { sale, percentOff } = await getSaleData();
+  const percentFactor = (100 - percentOff) / 100;
+
   // compute the total cost of the cart
-  return cart.reduce((totalCost, item) => totalCost + computeItemCost(item), 0);
+  const subtotal = cart.reduce((totalCost, item) => totalCost + computeItemCost(item), 0);
+  const total = sale ? subtotal * percentFactor : subtotal;
+  return total;
 }
 
 function generateItemImage(item, clientWidth, clientHeight) {
@@ -119,7 +139,7 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
   const centsPerDollar = 100;
 
   const { items, notes, email } = req.body;
-  const totalCost = computeCartCost(items) + 6;
+  const totalCost = await computeCartCost(items) + 6;
 
   // create and confirm Stripe payment intent
   try {
