@@ -137,9 +137,10 @@ function formatJsonShipping(shipping, email) {
 
 router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
   const centsPerDollar = 100;
+  const shippingCost = await getShippingCost();
 
   const { items, notes, email } = req.body;
-  const totalCost = await computeCartCost(items) + 6;
+  const totalCost = await computeCartCost(items) + shippingCost;
 
   // create and confirm Stripe payment intent
   try {
@@ -156,7 +157,8 @@ router.post(apiPrefix + "/create-confirm-intent", async (req, res) => {
       shipping: intent.shipping,
       notes: notes,
       email: email,
-      items: items.map(item => item.chain.alt)
+      items: items.map(item => item.chain.alt),
+
     });
 
     // send an email to business owners with order information
